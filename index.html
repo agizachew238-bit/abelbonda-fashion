@@ -427,7 +427,23 @@ window.deleteProduct = async function(id){
   alert("Delete failed: "+error.message);
  }
 };
+/* DELETE PRODUCT */
 
+window.deleteProduct = async function(id){
+ if(!currentUser || !isAdmin){
+  alert("Admin permission required.");
+  return;
+ }
+
+ if(!confirm("Are you sure you want to delete this product?")) return;
+
+ try{
+  await remove(ref(db,"products/"+id));
+  alert("Product deleted successfully!");
+ }catch(error){
+  alert("Delete failed: "+error.message);
+ }
+};
 /* PRODUCTS */
 
 function renderProducts(list=products){
