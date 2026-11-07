@@ -1041,6 +1041,41 @@ window.deleteOrder = async function(id){
   alert("Delete failed: "+error.message);
  }
 };
+ /* CONFIRM PAYMENT */
+window.confirmPayment = async function(id){
+ if(!currentUser || !isAdmin){
+  alert("Admin permission required.");
+  return;
+ }
+
+ if(!confirm("Have you verified the customer's payment?")){
+  return;
+ }
+
+ try{
+  const snapshot = await new Promise((resolve,reject)=>{
+   onValue(ref(db,"orders/"+id),snapshot=>{
+    resolve(snapshot);
+   },{onlyOnce:true});
+  });
+
+  const order = snapshot.val();
+
+  if(!order || !order.userId){
+   throw new Error("Order not found.");
+  }
+
+  await update(ref(db),{
+   ["orders/"+id+"/paymentStatus"]:"Paid",
+   ["userOrders/"+order.userId+"/"+id+"/paymentStatus"]:"Paid"
+  });
+
+  alert("Payment confirmed successfully!");
+
+ }catch(error){
+  alert("Payment confirmation failed: "+error.message);
+ }
+};
 /* LANGUAGE */
 
 window.changeLanguage=function(){
