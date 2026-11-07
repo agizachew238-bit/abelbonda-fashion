@@ -651,6 +651,7 @@ function listenMyOrders(){
   if(!currentUser) return;
 
   const box = document.getElementById("myOrdersList");
+  const paymentBox = document.getElementById("paymentInstructions");
   if(!box) return;
 
   onValue(ref(db, "userOrders/" + currentUser.uid), snapshot => {
@@ -662,6 +663,7 @@ function listenMyOrders(){
 
     if(myOrders.length === 0){
       box.innerHTML = "<p>You have no orders yet.</p>";
+      if(paymentBox) paymentBox.classList.add("hidden");
       return;
     }
 
@@ -670,10 +672,12 @@ function listenMyOrders(){
         ? "Shipping"
         : (order.status || "Pending");
 
+      const isConfirmed = order.status === "Confirmed";
+      const isPaid = order.paymentStatus === "Paid";
+
       return `
         <div class="admin-order">
           <b>Order #${safe(order.id)}</b>
-
           <p>Total: ${money(order.total)}</p>
           <p>Date: ${safe(order.date)}</p>
 
@@ -685,10 +689,6 @@ function listenMyOrders(){
             <strong>${safe(order.payment || "Not specified")}</strong>
           </p>
 
-          <p>Transaction ID:
-            <strong>${safe(order.transactionId || "Not provided")}</strong>
-          </p>
-
           <p>Payment Status:
             <strong>${safe(order.paymentStatus || "Pending Payment")}</strong>
           </p>
@@ -696,11 +696,21 @@ function listenMyOrders(){
           <p>Order Status:
             <strong class="status">${safe(status)}</strong>
           </p>
+
+          ${isConfirmed && !isPaid ? `
+            <button class="gold"
+              onclick="openPaymentForOrder('${safe(order.id)}')">
+              PAY FOR THIS ORDER
+            </button>
+          ` : ""}
         </div>
       `;
     }).join("");
+
+    if(paymentBox) paymentBox.classList.add("hidden");
   });
 }
+
 /* CHECKOUT */
 
 window.placeOrder=async function(event){
