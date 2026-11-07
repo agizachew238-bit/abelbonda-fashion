@@ -665,7 +665,10 @@ window.placeOrder=async function(event){
  };
 
  try{
-  await set(orderRef,order);
+  await update(ref(db), {
+  ["orders/" + orderRef.key]: order,
+  ["userOrders/" + currentUser.uid + "/" + orderRef.key]: order
+});
 
   const message=
    `New ABEL BONDA order%0A`+
