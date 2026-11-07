@@ -994,21 +994,40 @@ window.addProduct = async function(event) {
  }
 };
 
+/* ADMIN: ORDERS AND PAYMENT SUBMISSIONS */
 
-/* ADMIN: ORDERS */
-
-let ordersListenerStarted=false;
+let ordersListenerStarted = false;
+let adminOrdersData = {};
+let paymentSubmissionsData = {};
 
 function listenOrders(){
- if(ordersListenerStarted || !isAdmin)return;
+  if(ordersListenerStarted || !isAdmin) return;
 
- ordersListenerStarted=true;
+  ordersListenerStarted = true;
 
- onValue(ref(db,"orders"),snapshot=>{
-  const data=snapshot.val()||{};
-  const orders=Object.entries(data).map(([id,o])=>({...o,id}));
+  onValue(ref(db,"orders"), snapshot => {
+    adminOrdersData = snapshot.val() || {};
+    renderAdminOrders();
+  });
+
+  onValue(ref(db,"paymentSubmissions"), snapshot => {
+    paymentSubmissionsData = snapshot.val() || {};
+    renderAdminOrders();
+  });
+}
+
+function renderAdminOrders(){
+  const orders = Object.entries(adminOrdersData).map(([id,o]) => {
+    const payment = paymentSubmissionsData[o.userId]?.[id] || {};
+
+    return {
+      ...o,
+      id,
+      transactionId: payment.transactionId || ""
+    };
+  });
+
   renderOrders(orders);
- });
 }
 
 function renderOrders(orders){
