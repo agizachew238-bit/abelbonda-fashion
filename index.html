@@ -209,7 +209,25 @@ label{color:#ddd}
    <div id="myOrdersList">
       <p>የትዕዛዝ ታሪክዎ እዚህ ይታያል።</p>
    </div>
+<div id="paymentInstructions" class="hidden"
+     style="border:1px solid #d4af37;padding:15px;margin-top:15px;border-radius:10px;">
 
+  <h3 style="color:#d4af37;">PAYMENT INSTRUCTIONS</h3>
+
+  <p>Telebirr: <strong>0918823422</strong></p>
+  <p>CBE Account: <strong>1000400229604</strong></p>
+
+  <label>Transaction ID / የክፍያ መለያ</label>
+  <input id="newTransactionId"
+         type="text"
+         placeholder="Enter Transaction ID">
+
+  <button class="gold" onclick="submitTransactionId()">
+    SUBMIT PAYMENT ID
+  </button>
+
+  <p id="paymentMessage"></p>
+</div>
    <button class="outline" onclick="logoutUser()">Logout</button>
 </div>
 
