@@ -997,7 +997,41 @@ window.updateOrderStatus=async function(id){
   alert("Update failed: "+error.message);
  }
 };
+/* DELETE ORDER */
+window.deleteOrder = async function(id){
+ if(!currentUser || !isAdmin){
+  alert("Admin permission required.");
+  return;
+ }
 
+ if(!confirm("Are you sure you want to delete this order?")){
+  return;
+ }
+
+ try{
+  const snapshot = await new Promise((resolve,reject)=>{
+   onValue(ref(db,"orders/"+id),snapshot=>{
+    resolve(snapshot);
+   },{onlyOnce:true});
+  });
+
+  const order = snapshot.val();
+
+  if(!order || !order.userId){
+   throw new Error("Order not found.");
+  }
+
+  await update(ref(db),{
+   ["orders/"+id]:null,
+   ["userOrders/"+order.userId+"/"+id]:null
+  });
+
+  alert("Order deleted successfully!");
+
+ }catch(error){
+  alert("Delete failed: "+error.message);
+ }
+};
 /* LANGUAGE */
 
 window.changeLanguage=function(){
