@@ -304,13 +304,22 @@ label{color:#ddd}
      <option>Sale</option>
     </select>
 
-    <label>Choose Product Image from Gallery</label>
+<label>Choose Product Image from Gallery</label>
 <input
  id="newImageFile"
  type="file"
  accept="image/*"
- required
  onchange="previewProductImage(event)"
+>
+
+<p style="text-align:center;color:#d4af37;">OR</p>
+
+<label>Internet Image URL</label>
+<input
+ id="newImageUrl"
+ type="url"
+ placeholder="Paste direct image URL here"
+ oninput="previewProductImageUrl()"
 >
 
 <img
@@ -321,7 +330,6 @@ label{color:#ddd}
 
 <button class="gold" type="submit">POST PRODUCT</button>
 </form>
-
 <h3>Products Management</h3>
 <div id="adminProducts"></div>
 
