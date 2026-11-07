@@ -808,19 +808,20 @@ window.placeOrder=async function(event){
   phone:document.getElementById("customerPhone").value.trim(),
   address:document.getElementById("customerAddress").value.trim(),
   payment:document.getElementById("paymentMethod").value,
+
   items:cart.map(p=>({
-   items:cart.map(p=>({
-   id:p.id,
-   name:p.name,
-   price:p.price,
-   quantity:p.quantity,
-   image:p.image || ""
-})),
+    id:p.id,
+    name:p.name,
+    price:p.price,
+    quantity:p.quantity,
+    image:p.image || ""
+  })),
+
   total:cart.reduce((sum,p)=>sum+p.price*p.quantity,0),
   status:"Pending",
-paymentStatus:"Pending Payment",
+  paymentStatus:"Pending Payment",
   date:new Date().toISOString()
- };
+};
 
  try{
   await update(ref(db), {
