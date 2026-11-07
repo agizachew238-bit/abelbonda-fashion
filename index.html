@@ -700,6 +700,7 @@ window.placeOrder=async function(event){
   })),
   total:cart.reduce((sum,p)=>sum+p.price*p.quantity,0),
   status:"Pending",
+paymentStatus:"Pending Payment",
   date:new Date().toISOString()
  };
 
