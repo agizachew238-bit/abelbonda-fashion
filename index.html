@@ -799,9 +799,7 @@ window.addProduct = async function(event) {
  const price = Number(document.getElementById("newPrice").value);
  const category = document.getElementById("newCategory").value;
 
- const imageURL = document.getElementById("newImage")?.value.trim() || "";
- const image = selectedProductImage || imageURL;
-
+ const image = selectedProductImage;
  if (!name || price <= 0 || !image) {
   alert("Please enter product details and select an image.");
   return;
