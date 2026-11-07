@@ -940,7 +940,11 @@ function renderOrders(orders){
     <p>Phone: ${safe(o.phone)}</p>
     <p>Address: ${safe(o.address)}</p>
     <p>Payment: ${safe(o.payment)}</p>
-    <p>Total: ${money(o.total)}</p>
+  <p>
+ Transaction ID:
+ <strong>${safe(o.transactionId || "Not provided")}</strong>
+</p>
+<p>Total: ${money(o.total)}</p>
     <p>Status: <span class="status">${safe(currentStatus)}</span></p>
     <p>Date: ${safe(o.date)}</p>
 <p>Payment Status:
