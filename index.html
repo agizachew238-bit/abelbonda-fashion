@@ -971,7 +971,23 @@ window.updateOrderStatus=async function(id){
  }
 
  try{
-  await update(ref(db,"orders/"+id),{status});
+  const orderSnapshot = await new Promise((resolve,reject)=>{
+   onValue(ref(db,"orders/"+id),snapshot=>{
+    resolve(snapshot);
+   },{onlyOnce:true});
+  });
+
+  const order = orderSnapshot.val();
+
+  if(!order || !order.userId){
+   throw new Error("Order or customer information not found.");
+  }
+
+  await update(ref(db),{
+   ["orders/"+id+"/status"]:status,
+   ["userOrders/"+order.userId+"/"+id+"/status"]:status
+  });
+
   alert("Order status updated successfully!");
  }catch(error){
   alert("Update failed: "+error.message);
