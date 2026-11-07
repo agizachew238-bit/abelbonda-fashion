@@ -724,7 +724,59 @@ window.openPaymentForOrder = function(orderId){
   box.classList.remove("hidden");
   box.scrollIntoView({behavior:"smooth", block:"center"});
 };
-/* CHECKOUT */
+/* SUBMIT TRANSACTION ID */
+window.submitTransactionId = async function(){
+  if(!currentUser || !selectedPaymentOrderId){
+    alert("Please select a confirmed order first.");
+    return;
+  }
+
+  const input = document.getElementById("newTransactionId");
+  const message = document.getElementById("paymentMessage");
+  const transactionId = input.value.trim();
+
+  if(!transactionId){
+    message.textContent = "Please enter Transaction ID.";
+    return;
+  }
+
+  if(transactionId.length > 100){
+    message.textContent = "Transaction ID is too long.";
+    return;
+  }
+
+  try{
+    const snapshot = await new Promise((resolve,reject)=>{
+      onValue(ref(db,"orders/" + selectedPaymentOrderId),snapshot=>{
+        resolve(snapshot);
+      },{onlyOnce:true});
+    });
+
+    const order = snapshot.val();
+
+    if(!order ||
+       order.userId !== currentUser.uid ||
+       order.status !== "Confirmed" ||
+       order.paymentStatus === "Paid"){
+      throw new Error("This order is not eligible for payment submission.");
+    }
+
+    await set(
+      ref(db,"paymentSubmissions/" + currentUser.uid + "/" + selectedPaymentOrderId),
+      {
+        transactionId,
+        submittedAt:new Date().toISOString()
+      }
+    );
+
+    message.textContent = "Transaction ID submitted. Waiting for admin verification.";
+    input.value = "";
+
+  }catch(error){
+    message.textContent = "Submission failed: " + error.message;
+  }
+};
+ /* CHECKOUT */
 
 window.placeOrder=async function(event){
  event.preventDefault();
