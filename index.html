@@ -668,11 +668,26 @@ function listenMyOrders(){
       return `
         <div class="admin-order">
           <b>Order #${safe(order.id)}</b>
+
           <p>Total: ${money(order.total)}</p>
           <p>Date: ${safe(order.date)}</p>
+
           <p>Items: ${(order.items || []).map(item =>
             safe(item.name) + " × " + item.quantity
           ).join(", ")}</p>
+
+          <p>Payment Method:
+            <strong>${safe(order.payment || "Not specified")}</strong>
+          </p>
+
+          <p>Transaction ID:
+            <strong>${safe(order.transactionId || "Not provided")}</strong>
+          </p>
+
+          <p>Payment Status:
+            <strong>${safe(order.paymentStatus || "Pending Payment")}</strong>
+          </p>
+
           <p>Order Status:
             <strong class="status">${safe(status)}</strong>
           </p>
