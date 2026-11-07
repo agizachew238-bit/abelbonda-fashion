@@ -596,7 +596,9 @@ onAuthStateChanged(auth,async user=>{
     },{onlyOnce:true});
    });
 
-   isAdmin=adminSnapshot.val()===true;
+   isAdmin =
+ user.uid === ADMIN_UID &&
+ adminSnapshot.val() === true;
   }catch(error){
    isAdmin=false;
   }
