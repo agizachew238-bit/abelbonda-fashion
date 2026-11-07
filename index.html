@@ -928,6 +928,14 @@ function renderOrders(orders){
     <p>Total: ${money(o.total)}</p>
     <p>Status: <span class="status">${safe(currentStatus)}</span></p>
     <p>Date: ${safe(o.date)}</p>
+<p>Payment Status:
+ <strong>${safe(o.paymentStatus || "Pending Payment")}</strong>
+</p>
+
+<button class="gold"
+ onclick="confirmPayment('${o.id}')">
+ Confirm Payment
+</button>
 
     <label>Update Status</label>
 
