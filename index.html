@@ -710,7 +710,20 @@ function listenMyOrders(){
     if(paymentBox) paymentBox.classList.add("hidden");
   });
 }
+let selectedPaymentOrderId = null;
 
+window.openPaymentForOrder = function(orderId){
+  selectedPaymentOrderId = orderId;
+
+  const box = document.getElementById("paymentInstructions");
+  const message = document.getElementById("paymentMessage");
+
+  if(!box) return;
+  if(message) message.textContent = "";
+
+  box.classList.remove("hidden");
+  box.scrollIntoView({behavior:"smooth", block:"center"});
+};
 /* CHECKOUT */
 
 window.placeOrder=async function(event){
