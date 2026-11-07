@@ -1172,41 +1172,62 @@ window.deleteOrder = async function(id){
   alert("Delete failed: "+error.message);
  }
 };
- /* CONFIRM PAYMENT */
+/* CONFIRM PAYMENT */
 window.confirmPayment = async function(id){
- if(!currentUser || !isAdmin){
-  alert("Admin permission required.");
-  return;
- }
-
- if(!confirm("Have you verified the customer's payment?")){
-  return;
- }
-
- try{
-  const snapshot = await new Promise((resolve,reject)=>{
-   onValue(ref(db,"orders/"+id),snapshot=>{
-    resolve(snapshot);
-   },{onlyOnce:true});
-  });
-
-  const order = snapshot.val();
-
-  if(!order || !order.userId){
-   throw new Error("Order not found.");
+  if(!currentUser || !isAdmin){
+    alert("Admin permission required.");
+    return;
   }
 
-  await update(ref(db),{
-   ["orders/"+id+"/paymentStatus"]:"Paid",
-   ["userOrders/"+order.userId+"/"+id+"/paymentStatus"]:"Paid"
-  });
+  try{
+    const orderSnapshot = await new Promise(resolve=>{
+      onValue(ref(db,"orders/"+id), snapshot=>{
+        resolve(snapshot);
+      },{onlyOnce:true});
+    });
 
-  alert("Payment confirmed successfully!");
+    const order = orderSnapshot.val();
 
- }catch(error){
-  alert("Payment confirmation failed: "+error.message);
- }
+    if(!order || !order.userId){
+      throw new Error("Order not found.");
+    }
+
+    const paymentSnapshot = await new Promise(resolve=>{
+      onValue(
+        ref(db,"paymentSubmissions/"+order.userId+"/"+id),
+        snapshot=>{
+          resolve(snapshot);
+        },
+        {onlyOnce:true}
+      );
+    });
+
+    const payment = paymentSnapshot.val();
+
+    if(!payment || !payment.transactionId){
+      alert("Customer has not submitted a Transaction ID yet.");
+      return;
+    }
+
+    if(!confirm(
+      "Transaction ID: " + payment.transactionId +
+      "\n\nHave you checked your Telebirr or CBE account and verified the payment?"
+    )){
+      return;
+    }
+
+    await update(ref(db),{
+      ["orders/"+id+"/paymentStatus"]:"Paid",
+      ["userOrders/"+order.userId+"/"+id+"/paymentStatus"]:"Paid"
+    });
+
+    alert("Payment confirmed successfully!");
+
+  }catch(error){
+    alert("Payment confirmation failed: "+error.message);
+  }
 };
+
 /* LANGUAGE */
 
 window.changeLanguage=function(){
