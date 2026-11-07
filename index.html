@@ -853,6 +853,8 @@ function listenOrders(){
 
 function renderOrders(orders){
  const box=document.getElementById("ordersList");
+ if(!box)return;
+
  box.innerHTML="";
 
  if(!orders.length){
@@ -861,6 +863,9 @@ function renderOrders(orders){
  }
 
  orders.reverse().forEach(o=>{
+  const currentStatus =
+   o.status==="Shipped" ? "Shipping" : (o.status || "Pending");
+
   box.innerHTML+=`
    <div class="admin-order">
     <b>Order #${safe(o.id)}</b>
@@ -869,31 +874,56 @@ function renderOrders(orders){
     <p>Address: ${safe(o.address)}</p>
     <p>Payment: ${safe(o.payment)}</p>
     <p>Total: ${money(o.total)}</p>
-    <p>Status: <span class="status">${safe(o.status)}</span></p>
+    <p>Status: <span class="status">${safe(currentStatus)}</span></p>
     <p>Date: ${safe(o.date)}</p>
+
     <label>Update Status</label>
+
     <select id="status-${safe(o.id)}">
-     <option ${o.status==="Pending"?"selected":""}>Pending</option>
-     <option ${o.status==="Confirmed"?"selected":""}>Confirmed</option>
-     <option ${o.status==="Shipped"?"selected":""}>Shipped</option>
-     <option ${o.status==="Delivered"?"selected":""}>Delivered</option>
-     <option ${o.status==="Cancelled"?"selected":""}>Cancelled</option>
+     <option value="Pending" ${currentStatus==="Pending"?"selected":""}>Pending</option>
+     <option value="Confirmed" ${currentStatus==="Confirmed"?"selected":""}>Confirmed</option>
+     <option value="Shipping" ${currentStatus==="Shipping"?"selected":""}>Shipping</option>
+     <option value="Delivered" ${currentStatus==="Delivered"?"selected":""}>Delivered</option>
+     <option value="Cancelled" ${currentStatus==="Cancelled"?"selected":""}>Cancelled</option>
     </select>
-    <button class="gold" onclick="updateOrderStatus('${o.id}')">Save Status</button>
-   </div>`;
+
+    <button class="gold" onclick="updateOrderStatus('${o.id}')">
+     Save Status
+    </button>
+   </div>
+  `;
  });
 }
 
 window.updateOrderStatus=async function(id){
- if(!currentUser || !isAdmin)return;
+ if(!currentUser || !isAdmin){
+  alert("Admin permission required.");
+  return;
+ }
 
- const status=document.getElementById("status-"+id).value;
+ const select=document.getElementById("status-"+id);
+ if(!select)return;
+
+ const status=select.value;
+
+ const allowed=[
+  "Pending",
+  "Confirmed",
+  "Shipping",
+  "Delivered",
+  "Cancelled"
+ ];
+
+ if(!allowed.includes(status)){
+  alert("Invalid order status.");
+  return;
+ }
 
  try{
   await update(ref(db,"orders/"+id),{status});
-  alert("Order status updated.");
+  alert("Order status updated successfully!");
  }catch(error){
-  alert(error.message);
+  alert("Update failed: "+error.message);
  }
 };
 
