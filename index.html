@@ -597,7 +597,7 @@ onAuthStateChanged(auth,async user=>{
   document.getElementById("authForms").classList.add("hidden");
   document.getElementById("userInfo").classList.remove("hidden");
   document.getElementById("userEmail").textContent=user.email || "";
-
+listenMyOrders();
   try{
    const adminSnapshot=await new Promise((resolve,reject)=>{
     onValue(ref(db,"admins/"+user.uid),snapshot=>{
