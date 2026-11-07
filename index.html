@@ -733,31 +733,52 @@ window.previewProductImage = function(event) {
 };
 /* ADMIN: ADD PRODUCT */
 
-window.addProduct=async function(event){
+window.addProduct = async function(event) {
  event.preventDefault();
 
- if(!currentUser || !isAdmin){
+ if (!currentUser || !isAdmin) {
   alert("Admin permission required.");
   return;
  }
 
- const product={
-  name:document.getElementById("newName").value.trim(),
-  price:Number(document.getElementById("newPrice").value),
-  category:document.getElementById("newCategory").value,
-  image:document.getElementById("newImage").value.trim(),
-  createdAt:new Date().toISOString()
+ const name = document.getElementById("newName").value.trim();
+ const price = Number(document.getElementById("newPrice").value);
+ const category = document.getElementById("newCategory").value;
+
+ const imageURL = document.getElementById("newImage")?.value.trim() || "";
+ const image = selectedProductImage || imageURL;
+
+ if (!name || price <= 0 || !image) {
+  alert("Please enter product details and select an image.");
+  return;
+ }
+
+ const product = {
+  name,
+  price,
+  category,
+  image,
+  createdAt: new Date().toISOString()
  };
 
- try{
-  await set(push(ref(db,"products")),product);
+ try {
+  await set(push(ref(db, "products")), product);
+
   event.target.reset();
-  alert("Product added successfully!");
- }catch(error){
-  alert("Could not add product: "+error.message);
+  selectedProductImage = "";
+
+  const preview = document.getElementById("imagePreview");
+  if (preview) {
+   preview.src = "";
+   preview.style.display = "none";
+  }
+
+  alert("Product and image posted successfully!");
+
+ } catch(error) {
+  alert("Upload failed: " + error.message);
  }
 };
-
 /* ADMIN: PRODUCT MANAGEMENT */
 
 function renderAdminProducts(){
