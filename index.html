@@ -833,38 +833,7 @@ window.addProduct = async function(event) {
   alert("Upload failed: " + error.message);
  }
 };
-/* ADMIN: PRODUCT MANAGEMENT */
 
-function renderAdminProducts(){
- const box=document.getElementById("adminProducts");
- if(!box)return;
-
- box.innerHTML="";
-
- if(!isAdmin)return;
-
- products.forEach(p=>{
-  box.innerHTML+=`
-   <div class="admin-order">
-    <b>${safe(p.name)}</b>
-    <p>${money(p.price)} • ${safe(p.category)}</p>
-    <button class="outline" onclick="deleteProduct('${p.id}')">Delete</button>
-   </div>`;
- });
-}
-
-window.deleteProduct=async function(id){
- if(!currentUser || !isAdmin)return;
-
- if(!confirm("Delete this product?"))return;
-
- try{
-  await remove(ref(db,"products/"+id));
-  alert("Product deleted.");
- }catch(error){
-  alert(error.message);
- }
-};
 
 /* ADMIN: ORDERS */
 
