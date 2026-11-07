@@ -891,87 +891,10 @@ window.logoutAdmin=async function(){
  document.getElementById("adminLogin").classList.remove("hidden");
  document.getElementById("adminContent").classList.add("hidden");
 };
-/* GALLERY IMAGE UPLOAD */
-
-let selectedProductImage = "";
-
-window.previewProductImage = function(event) {
- const file = event.target.files[0];
-
- if (!file) return;
-
- if (!file.type.startsWith("image/")) {
-  alert("Please select an image file.");
-  return;
- }
-
- // 5MB በላይ የሆነ ፎቶ አንቀበልም
- if (file.size > 5 * 1024 * 1024) {
-  alert("Image is too large. Please choose an image under 5MB.");
-  event.target.value = "";
-  return;
- }
-
- const reader = new FileReader();
-
- reader.onload = function(e) {
-  const img = new Image();
-
-  img.onload = function() {
-   const canvas = document.createElement("canvas");
-
-   const maxSize = 900;
-   let width = img.width;
-   let height = img.height;
-
-   if (width > height && width > maxSize) {
-    height = Math.round(height * maxSize / width);
-    width = maxSize;
-   } else if (height > maxSize) {
-    width = Math.round(width * maxSize / height);
-    height = maxSize;
-   }
-
-   canvas.width = width;
-   canvas.height = height;
-
-   const ctx = canvas.getContext("2d");
-   ctx.drawImage(img, 0, 0, width, height);
-
-   // ፎቶውን አነስ አድርገን JPEG እናደርገዋለን
-   selectedProductImage = canvas.toDataURL("image/jpeg", 0.70);
-
-   const preview = document.getElementById("imagePreview");
-   preview.src = selectedProductImage;
-   preview.style.display = "block";
-  };
-
-  img.onerror = function() {
-   alert("Could not read this image.");
-  };
-
-  img.src = e.target.result;
- };
-
- reader.readAsDataURL(file);
-};
-/* ADMIN: ADD PRODUCT */
-
-window.addProduct = async function(event) {
- event.preventDefault();
-
- if (!currentUser || !isAdmin) {
-  alert("Admin permission required.");
-  return;
- }
-
- const name = document.getElementById("newName").value.trim();
- const price = Number(document.getElementById("newPrice").value);
- const category = document.getElementById("newCategory").value;
-
 /* PRODUCT IMAGE UPLOAD */
 
 let selectedProductImage = "";
+let imageUrlValid = false;
 
 window.previewProductImage = function(event) {
  const file = event.target.files[0];
@@ -989,6 +912,7 @@ window.previewProductImage = function(event) {
  }
 
  document.getElementById("newImageUrl").value = "";
+ imageUrlValid = false;
 
  const reader = new FileReader();
 
@@ -998,7 +922,6 @@ window.previewProductImage = function(event) {
   img.onload = function() {
    const canvas = document.createElement("canvas");
    const maxSize = 900;
-
    let width = img.width;
    let height = img.height;
 
@@ -1012,7 +935,6 @@ window.previewProductImage = function(event) {
 
    canvas.width = width;
    canvas.height = height;
-
    canvas.getContext("2d").drawImage(img, 0, 0, width, height);
 
    selectedProductImage = canvas.toDataURL("image/jpeg", 0.70);
@@ -1033,10 +955,10 @@ window.previewProductImage = function(event) {
 
 window.previewProductImageUrl = function() {
  const url = document.getElementById("newImageUrl").value.trim();
-
  const preview = document.getElementById("imagePreview");
 
  selectedProductImage = "";
+ imageUrlValid = false;
  document.getElementById("newImageFile").value = "";
 
  if (!url) {
@@ -1046,11 +968,13 @@ window.previewProductImageUrl = function() {
  }
 
  preview.onload = function() {
+  imageUrlValid = true;
   selectedProductImage = url;
   preview.style.display = "block";
  };
 
  preview.onerror = function() {
+  imageUrlValid = false;
   selectedProductImage = "";
   preview.style.display = "none";
  };
@@ -1072,9 +996,19 @@ window.addProduct = async function(event) {
  const name = document.getElementById("newName").value.trim();
  const price = Number(document.getElementById("newPrice").value);
  const category = document.getElementById("newCategory").value;
-
  const imageUrl = document.getElementById("newImageUrl").value.trim();
- const image = imageUrl || selectedProductImage;
+
+ let image = "";
+
+ if (imageUrl) {
+  if (!imageUrlValid) {
+   alert("Please enter a valid image URL and wait for the preview.");
+   return;
+  }
+  image = imageUrl;
+ } else {
+  image = selectedProductImage;
+ }
 
  if (!name || price <= 0 || !image) {
   alert("Please enter product details and choose an image.");
@@ -1094,6 +1028,7 @@ window.addProduct = async function(event) {
 
   event.target.reset();
   selectedProductImage = "";
+  imageUrlValid = false;
 
   const preview = document.getElementById("imagePreview");
   preview.src = "";
