@@ -941,6 +941,10 @@ function renderOrders(orders){
     <button class="gold" onclick="updateOrderStatus('${o.id}')">
      Save Status
     </button>
+
+    <button class="outline" onclick="deleteOrder('${o.id}')" style="color:#ff5555;border-color:#ff5555;margin-top:10px;">
+     🗑️ Delete Order
+    </button>
    </div>
   `;
  });
