@@ -628,7 +628,46 @@ onAuthStateChanged(auth,async user=>{
   isAdmin=false;
  }
 });
+/* CUSTOMER ORDER HISTORY */
+function listenMyOrders(){
+  if(!currentUser) return;
 
+  const box = document.getElementById("myOrdersList");
+  if(!box) return;
+
+  onValue(ref(db, "userOrders/" + currentUser.uid), snapshot => {
+    const data = snapshot.val() || {};
+
+    const myOrders = Object.entries(data)
+      .map(([id, order]) => ({...order, id}))
+      .reverse();
+
+    if(myOrders.length === 0){
+      box.innerHTML = "<p>You have no orders yet.</p>";
+      return;
+    }
+
+    box.innerHTML = myOrders.map(order => {
+      const status = order.status === "Shipped"
+        ? "Shipping"
+        : (order.status || "Pending");
+
+      return `
+        <div class="admin-order">
+          <b>Order #${safe(order.id)}</b>
+          <p>Total: ${money(order.total)}</p>
+          <p>Date: ${safe(order.date)}</p>
+          <p>Items: ${(order.items || []).map(item =>
+            safe(item.name) + " × " + item.quantity
+          ).join(", ")}</p>
+          <p>Order Status:
+            <strong class="status">${safe(status)}</strong>
+          </p>
+        </div>
+      `;
+    }).join("");
+  });
+}
 /* CHECKOUT */
 
 window.placeOrder=async function(event){
