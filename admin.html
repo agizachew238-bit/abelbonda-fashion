@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ABEL BONDA | Admin Dashboard</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;
+ font-family:Arial,sans-serif;
+ background:#090909;
+ color:#fff;
+}
+header{
+ background:#111;
+ padding:20px;
+ border-bottom:1px solid #d4af37;
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+}
+h1,h2,h3{color:#d4af37}
+.logo{font-weight:bold;font-size:22px}
+.container{max-width:1100px;margin:auto;padding:20px}
+.panel{
+ background:#151515;
+ border:1px solid #333;
+ border-radius:12px;
+ padding:20px;
+ margin:20px 0;
+}
+input,select,button{
+ width:100%;
+ padding:13px;
+ margin:8px 0;
+ border-radius:7px;
+ border:1px solid #444;
+ background:#222;
+ color:white;
+}
+button{
+ background:#d4af37;
+ color:#000;
+ font-weight:bold;
+ border:0;
+ cursor:pointer;
+}
+button.danger{background:#b52b2b;color:white}
+button.secondary{background:#444;color:white}
+.hidden{display:none!important}
+.notice{color:#d4af37}
+.card{
+ background:#202020;
+ border:1px solid #444;
+ padding:15px;
+ margin:12px 0;
+ border-radius:9px;
+ overflow-wrap:anywhere;
+}
+.card img{
+ max-width:130px;
+ max-height:130px;
+ object-fit:contain;
+ display:block;
+ margin:10px 0;
+}
+.row{
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:12px;
+}
+pre{
+ white-space:pre-wrap;
+ overflow-wrap:anywhere;
+ color:#ddd;
+}
+@media(max-width:600px){
+ .row{grid-template-columns:1fr}
+ header{flex-direction:column;gap:10px}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+ <div class="logo">ABEL BONDA CLOTHING</div>
+ <div>ADMIN DASHBOARD</div>
+</header>
+
+<div class="container">
+
+<!-- LOGIN -->
+<div class="panel" id="loginPanel">
+ <h2>Admin Login</h2>
+
+ <label>Email</label>
+ <input id="adminEmail" type="email" placeholder="Admin Email">
+
+ <label>Password</label>
+ <input id="adminPassword" type="password" placeholder="Password">
+
+ <button onclick="loginAdmin()">LOGIN</button>
+
+ <p id="loginMessage" class="notice"></p>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="hidden">
+
+ <div class="panel">
+  <h2>Welcome, Admin</h2>
+  <button class="secondary" onclick="logoutAdmin()">LOGOUT</button>
+ </div>
+
+ <!-- ADD PRODUCT -->
+ <div class="panel">
+  <h2>Add New Product</h2>
+
+  <label>Product Name</label>
+  <input id="productName" placeholder="Product name">
+
+  <label>Price (ETB)</label>
+  <input id="productPrice" type="number" min="1" placeholder="Price">
+
+  <label>Category</label>
+  <select id="productCategory">
+   <option>Men</option>
+   <option>Women</option>
+   <option>Shoes</option>
+   <option>Sale</option>
+  </select>
+
+  <label>Product Image</label>
+  <input id="productImage" type="file" accept="image/*">
+
+  <label>OR Image URL</label>
+  <input id="productImageUrl" type="url" placeholder="https://example.com/image.jpg">
+
+  <button onclick="addProduct()">POST PRODUCT</button>
+  <p id="productMessage" class="notice"></p>
+ </div>
+
+ <!-- PRODUCTS -->
+ <div class="panel">
+  <h2>Products Management</h2>
+  <div id="productsList">Loading products...</div>
+ </div>
+
+ <!-- ORDERS -->
+ <div class="panel">
+  <h2>Customer Orders</h2>
+  <div id="ordersList">Loading orders...</div>
+ </div>
+
+ <!-- PAYMENTS -->
+ <div class="panel">
+  <h2>Payment Submissions</h2>
+  <div id="paymentsList">Loading payments...</div>
+ </div>
+
+</div>
+</div>
+
+<script type="module">
+
+import {initializeApp}
+from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+
+import {
+ getAuth,
+ signInWithEmailAndPassword,
+ signOut,
+ onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+
+import {
+ getDatabase,
+ ref,
+ push,
+ set,
+ onValue,
+ remove,
+ update,
+ get
+} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+
+
+/* IMPORTANT:
+   Replace this object with the EXACT firebaseConfig
+   from your existing index.html file.
+*/
+
+const firebaseConfig = {
+ apiKey: "PASTE_YOUR_API_KEY",
+ authDomain: "abelbonda-7e5be.firebaseapp.com",
+ databaseURL: "https://abelbonda-7e5be-default-rtdb.firebaseio.com",
+ projectId: "abelbonda-7e5be",
+ storageBucket: "abelbonda-7e5be.firebasestorage.app",
+ messagingSenderId: "PASTE_YOUR_MESSAGING_SENDER_ID",
+ appId: "PASTE_YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+let currentAdmin = null;
+let productsStarted = false;
+let ordersStarted = false;
+let paymentsStarted = false;
+
+
+/* SAFE HTML */
+function escapeHTML(value){
+ return String(value ?? "").replace(/[&<>"']/g, char => ({
+  "&":"&amp;",
+  "<":"&lt;",
+  ">":"&gt;",
+  '"':"&quot;",
+  "'":"&#039;"
+ })[char]);
+}
+
+
+/* ADMIN LOGIN */
+window.loginAdmin = async function(){
+
+ const email = document.getElementById("adminEmail").value.trim();
+ const password = document.getElementById("adminPassword").value;
+ const message = document.getElementById("loginMessage");
+
+ if(!email || !password){
+  message.textContent = "Enter email and password.";
+  return;
+ }
+
+ message.textContent = "Checking account...";
+
+ try{
+
+  const result = await signInWithEmailAndPassword(
+   auth,email,password
+  );
+
+  const adminSnapshot = await get(
+   ref(db,"admins/"+result.user.uid)
+  );
+
+  if(adminSnapshot.val() !== true){
+   await signOut(auth);
+   message.textContent = "Access denied. Admin account only.";
+   return;
+  }
+
+  currentAdmin = result.user;
+
+  document.getElementById("loginPanel").classList.add("hidden");
+  document.getElementById("dashboard").classList.remove("hidden");
+
+  startDashboard();
+
+ }catch(error){
+  message.textContent = error.message;
+ }
+
+};
+
+
+/* AUTH CHECK */
+onAuthStateChanged(auth, async user => {
+
+ if(!user){
+  currentAdmin = null;
+  document.getElementById("loginPanel").classList.remove("hidden");
+  document.getElementById("dashboard").classList.add("hidden");
+  return;
+ }
+
+ try{
+
+  const snapshot = await get(ref(db,"admins/"+user.uid));
+
+  if(snapshot.val() === true){
+   currentAdmin = user;
+   document.getElementById("loginPanel").classList.add("hidden");
+   document.getElementById("dashboard").classList.remove("hidden");
+   startDashboard();
+  }else{
+   currentAdmin = null;
+   await signOut(auth);
+  }
+
+ }catch(error){
+  currentAdmin = null;
+  await signOut(auth);
+  document.getElementById("loginMessage").textContent =
+   "Admin verification failed.";
+ }
+
+});
+
+
+/* DASHBOARD */
+function startDashboard(){
+
+ if(!currentAdmin) return;
+
+ if(!productsStarted){
+  productsStarted = true;
+  listenProducts();
+ }
+
+ if(!ordersStarted){
+  ordersStarted = true;
+  listenOrders();
+ }
+
+ if(!paymentsStarted){
+  paymentsStarted = true;
+  listenPayments();
+ }
+
+}
+
+
+/* LOGOUT */
+window.logoutAdmin = async function(){
+ await signOut(auth);
+ location.reload();
+};
+
+
+/* ADD PRODUCT */
+window.addProduct = async function(){
+
+ if(!currentAdmin) return;
+
+ const name = document.getElementById("productName").value.trim();
+ const price = Number(document.getElementById("productPrice").value);
+ const category = document.getElementById("productCategory").value;
+ const file = document.getElementById("productImage").files[0];
+ const imageUrl = document.getElementById("productImageUrl").value.trim();
+ const message = document.getElementById("productMessage");
+
+ if(!name || !price || price <= 0){
+  message.textContent = "Enter a valid product name and price.";
+  return;
+ }
+
+ message.textContent = "Preparing product...";
+
+ try{
+
+  let image = imageUrl;
+
+  if(file){
+   image = await compressImage(file);
+  }
+
+  if(!image){
+   message.textContent = "Please select an image or enter an image URL.";
+   return;
+  }
+
+  const productRef = push(ref(db,"products"));
+
+  await set(productRef,{
+   name,
+   price,
+   category,
+   image,
+   createdAt: new Date().toISOString()
+  });
+
+  document.getElementById("productName").value = "";
+  document.getElementById("productPrice").value = "";
+  document.getElementById("productImage").value = "";
+  document.getElementById("productImageUrl").value = "";
+
+  message.textContent = "Product added successfully!";
+
+ }catch(error){
+  message.textContent = "Error: "+error.message;
+ }
+
+};
+
+
+/* IMAGE COMPRESSION */
+function compressImage(file){
+
+ return new Promise((resolve,reject)=>{
+
+  if(!file.type.startsWith("image/")){
+   reject(new Error("Please select an image file."));
+   return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = event => {
+
+   const img = new Image();
+
+   img.onload = () => {
+
+    const canvas = document.createElement("canvas");
+    const maxSize = 900;
+
+    let width = img.width;
+    let height = img.height;
+
+    if(width > height && width > maxSize){
+     height = Math.round(height * maxSize / width);
+     width = maxSize;
+    }else if(height > maxSize){
+     width = Math.round(width * maxSize / height);
+     height = maxSize;
+    }
+
+    canvas.width = width;
+    canvas.height = height;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img,0,0,width,height);
+
+    resolve(canvas.toDataURL("image/jpeg",0.70));
+
+   };
+
+   img.onerror = () => reject(new Error("Image could not be loaded."));
+   img.src = event.target.result;
+
+  };
+
+  reader.onerror = () => reject(new Error("Image could not be read."));
+  reader.readAsDataURL(file);
+
+ });
+
+}
+
+
+/* LIST PRODUCTS */
+function listenProducts(){
+
+ onValue(ref(db,"products"),snapshot=>{
+
+  const list = document.getElementById("productsList");
+  list.innerHTML = "";
+
+  if(!snapshot.exists()){
+   list.textContent = "No products found.";
+   return;
+  }
+
+  snapshot.forEach(child=>{
+
+   const id = child.key;
+   const p = child.val();
+
+   const card = document.createElement("div");
+   card.className = "card";
+
+   card.innerHTML = `
+    <h3>${escapeHTML(p.name)}</h3>
+    <p>Price: ${escapeHTML(p.price)} ETB</p>
+    <p>Category: ${escapeHTML(p.category)}</p>
+    ${p.image ? `<img src="${escapeHTML(p.image)}" alt="Product">` : ""}
+    <button class="danger" data-delete-product="${escapeHTML(id)}">
+     DELETE PRODUCT
+    </button>
+   `;
+
+   list.appendChild(card);
+
+  });
+
+ });
+
+}
+
+
+/* DELETE PRODUCT */
+document.getElementById("productsList").addEventListener("click",async event=>{
+
+ const button = event.target.closest("[data-delete-product]");
+ if(!button || !currentAdmin) return;
+
+ const id = button.dataset.deleteProduct;
+
+ if(!confirm("Delete this product?")) return;
+
+ try{
+  await remove(ref(db,"products/"+id));
+ }catch(error){
+  alert(error.message);
+ }
+
+});
+
+
+/* LIST ORDERS */
+function listenOrders(){
+
+ onValue(ref(db,"orders"),snapshot=>{
+
+  const list = document.getElementById("ordersList");
+  list.innerHTML = "";
+
+  if(!snapshot.exists()){
+   list.textContent = "No orders found.";
+   return;
+  }
+
+  snapshot.forEach(child=>{
+
+   const id = child.key;
+   const order = child.val();
+
+   const card = document.createElement("div");
+   card.className = "card";
+
+   card.innerHTML = `
+    <h3>Order: ${escapeHTML(id)}</h3>
+    <p>Customer: ${escapeHTML(order.name || order.customerName || "N/A")}</p>
+    <p>Phone: ${escapeHTML(order.phone || "N/A")}</p>
+    <p>Total: ${escapeHTML(order.total || order.totalPrice || "N/A")} ETB</p>
+    <p>Status: ${escapeHTML(order.status || "Pending")}</p>
+    <p>Date: ${escapeHTML(order.date || order.createdAt || "N/A")}</p>
+    <h4>Order Details</h4>
+    <pre>${escapeHTML(JSON.stringify(order.items || order,null,2))}</pre>
+
+    <label>Update Status</label>
+    <select id="status-${escapeHTML(id)}">
+     <option value="Pending">Pending</option>
+     <option value="Confirmed">Confirmed</option>
+     <option value="Delivered">Delivered</option>
+     <option value="Cancelled">Cancelled</option>
+    </select>
+
+    <button data-update-order="${escapeHTML(id)}">
+     UPDATE STATUS
+    </button>
+
+    <button class="danger" data-delete-order="${escapeHTML(id)}">
+     DELETE ORDER
+    </button>
+   `;
+
+   list.appendChild(card);
+
+   const select = document.getElementById("status-"+id);
+   if(select) select.value = order.status || "Pending";
+
+  });
+
+ });
+
+}
+
+
+/* UPDATE ORDER */
+document.getElementById("ordersList").addEventListener("click",async event=>{
+
+ const button = event.target.closest("[data-update-order]");
+ if(!button || !currentAdmin) return;
+
+ const id = button.dataset.updateOrder;
+ const select = document.getElementById("status-"+id);
+ const newStatus = select.value;
+
+ try{
+
+  const snapshot = await get(ref(db,"orders/"+id));
+  if(!snapshot.exists()) return;
+
+  const order = snapshot.val();
+
+  await update(ref(db,"orders/"+id),{
+   status:newStatus
+  });
+
+  if(order.userId){
+   await update(ref(db,"userOrders/"+order.userId+"/"+id),{
+    status:newStatus
+   });
+  }
+
+  alert("Order status updated.");
+
+ }catch(error){
+  alert("Update failed: "+error.message);
+ }
+
+});
+
+
+/* DELETE ORDER */
+document.getElementById("ordersList").addEventListener("click",async event=>{
+
+ const button = event.target.closest("[data-delete-order]");
+ if(!button || !currentAdmin) return;
+
+ const id = button.dataset.deleteOrder;
+
+ if(!confirm("Are you sure you want to delete this order?")) return;
+
+ try{
+
+  const snapshot = await get(ref(db,"orders/"+id));
+  const order = snapshot.val();
+
+  await remove(ref(db,"orders/"+id));
+
+  if(order && order.userId){
+   await remove(ref(db,"userOrders/"+order.userId+"/"+id));
+  }
+
+ }catch(error){
+  alert(error.message);
+ }
+
+});
+
+
+/* LIST PAYMENT SUBMISSIONS */
+function listenPayments(){
+
+ onValue(ref(db,"paymentSubmissions"),snapshot=>{
+
+  const list = document.getElementById("paymentsList");
+  list.innerHTML = "";
+
+  if(!snapshot.exists()){
+   list.textContent = "No payment submissions.";
+   return;
+  }
+
+  snapshot.forEach(userChild=>{
+
+   const uid = userChild.key;
+
+   userChild.forEach(orderChild=>{
+
+    const orderId = orderChild.key;
+    const payment = orderChild.val();
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    card.innerHTML = `
+     <h3>Payment Submission</h3>
+     <p>Customer UID: ${escapeHTML(uid)}</p>
+     <p>Order ID: ${escapeHTML(orderId)}</p>
+     <p>Transaction ID: ${escapeHTML(payment.transactionId || "N/A")}</p>
+     <p>Submitted: ${escapeHTML(payment.submittedAt || "N/A")}</p>
+
+     <button data-confirm-payment="${escapeHTML(uid)}"
+             data-payment-order="${escapeHTML(orderId)}">
+      CONFIRM VERIFIED PAYMENT
+     </button>
+    `;
+
+    list.appendChild(card);
+
+   });
+
+  });
+
+ });
+
+}
+
+
+/* CONFIRM PAYMENT */
+document.getElementById("paymentsList").addEventListener("click",async event=>{
+
+ const button = event.target.closest("[data-confirm-payment]");
+ if(!button || !currentAdmin) return;
+
+ const uid = button.dataset.confirmPayment;
+ const orderId = button.dataset.paymentOrder;
+
+ const confirmed = confirm(
+  "Have you checked the actual payment receipt and verified this transaction?"
+ );
+
+ if(!confirmed) return;
+
+ try{
+
+  const orderSnapshot = await get(ref(db,"orders/"+orderId));
+
+  if(!orderSnapshot.exists()){
+   alert("Order not found.");
+   return;
+  }
+
+  const order = orderSnapshot.val();
+
+  if(order.userId !== uid){
+   alert("Customer and order do not match.");
+   return;
+  }
+
+  await update(ref(db,"orders/"+orderId),{
+   paymentStatus:"Paid"
+  });
+
+  await update(ref(db,"userOrders/"+uid+"/"+orderId),{
+   paymentStatus:"Paid"
+  });
+
+  alert("Payment marked as verified.");
+
+ }catch(error){
+  alert("Payment update failed: "+error.message);
+ }
+
+});
+
+</script>
+</body>
+</html>
