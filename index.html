@@ -797,62 +797,110 @@ window.submitTransactionId = async function(){
 };
  /* CHECKOUT */
 
-window.placeOrder=async function(event){
+window.placeOrder = async function(event){
  event.preventDefault();
 
  if(!currentUser){
-  alert("Please create an account or login before placing an order.");
+  alert("Please login before placing an order.");
   openAuth();
   return;
  }
 
- if(cart.length===0){
+ if(cart.length === 0){
   alert("Your cart is empty!");
   return;
  }
 
- const orderRef=push(ref(db,"orders"));
+ const name = document.getElementById("customerName").value.trim();
+ const phone = document.getElementById("customerPhone").value.trim();
+ const address = document.getElementById("customerAddress").value.trim();
+ const payment = document.getElementById("paymentMethod").value;
 
- const order={
-  userId:currentUser.uid,
-  name:document.getElementById("customerName").value.trim(),
-  phone:document.getElementById("customerPhone").value.trim(),
-  address:document.getElementById("customerAddress").value.trim(),
-  payment:document.getElementById("paymentMethod").value,
-
-  items:cart.map(p=>({
-    id:p.id,
-    name:p.name,
-    price:p.price,
-    quantity:p.quantity,
-    image:p.image || ""
-  })),
-
-  total:cart.reduce((sum,p)=>sum+p.price*p.quantity,0),
-  status:"Pending",
-  paymentStatus:"Pending Payment",
-  date:new Date().toISOString()
-};
+ if(!name || !phone || !address){
+  alert("Please complete all customer details.");
+  return;
+ }
 
  try{
-  await update(ref(db), {
-  ["orders/" + orderRef.key]: order,
-  ["userOrders/" + currentUser.uid + "/" + orderRef.key]: order
-});
+  // Read the latest product prices from Firebase
+  const snapshot = await new Promise((resolve,reject)=>{
+   onValue(ref(db,"products"), snap=>{
+    resolve(snap);
+   },{onlyOnce:true});
+  });
 
-  const message=
+  const databaseProducts = snapshot.val() || {};
+
+  let verifiedItems = [];
+  let total = 0;
+
+  for(const item of cart){
+
+   const product = databaseProducts[item.id];
+
+   if(!product){
+    throw new Error("A product in your cart is no longer available.");
+   }
+
+   const quantity = Number(item.quantity);
+
+   if(!Number.isInteger(quantity) || quantity < 1 || quantity > 20){
+    throw new Error("Invalid product quantity.");
+   }
+
+   const price = Number(product.price);
+
+   if(!Number.isFinite(price) || price <= 0){
+    throw new Error("Invalid product price.");
+   }
+
+   verifiedItems.push({
+    id:item.id,
+    name:product.name,
+    price:price,
+    quantity:quantity,
+    image:product.image || ""
+   });
+
+   total += price * quantity;
+  }
+
+  const orderRef = push(ref(db,"orders"));
+
+  const order = {
+   userId:currentUser.uid,
+   name,
+   phone,
+   address,
+   payment,
+   items:verifiedItems,
+   total,
+   status:"Pending",
+   paymentStatus:"Pending Payment",
+   date:new Date().toISOString()
+  };
+
+  await update(ref(db),{
+   ["orders/"+orderRef.key]:order,
+   ["userOrders/"+currentUser.uid+"/"+orderRef.key]:order
+  });
+
+  const message =
    `New ABEL BONDA order%0A`+
    `Order: ${orderRef.key}%0A`+
-   `Name: ${encodeURIComponent(order.name)}%0A`+
-   `Phone: ${encodeURIComponent(order.phone)}%0A`+
-   `Total: ${order.total} ETB%0A`+
-   `Payment: ${encodeURIComponent(order.payment)}`;
+   `Name: ${encodeURIComponent(name)}%0A`+
+   `Phone: ${encodeURIComponent(phone)}%0A`+
+   `Total: ${total} ETB%0A`+
+   `Payment: ${encodeURIComponent(payment)}`;
 
   alert("Your order has been saved successfully!");
 
-  window.open("https://wa.me/251918823422?text="+message,"_blank");
+  window.open(
+   "https://wa.me/251918823422?text="+message,
+   "_blank"
+  );
 
-  cart=[];
+  cart = [];
   saveCart();
   updateCart();
   closeCart();
@@ -862,7 +910,6 @@ window.placeOrder=async function(event){
   alert("Order could not be saved: "+error.message);
  }
 };
-
 /* ADMIN LOGIN */
 
 window.openAdmin=function(){
