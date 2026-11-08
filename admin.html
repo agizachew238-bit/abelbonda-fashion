@@ -621,7 +621,42 @@ document.getElementById("ordersList").addEventListener("click",async event=>{
  }
 
 });
+document.getElementById("ordersList").addEventListener("click", async event => {
 
+ const button = event.target.closest("[data-mark-paid]");
+ if(!button || !currentAdmin) return;
+
+ const id = button.dataset.markPaid;
+
+ if(!confirm("Have you verified the actual payment?")) return;
+
+ try {
+  const snapshot = await get(ref(db,"orders/"+id));
+
+  if(!snapshot.exists()){
+   alert("Order not found.");
+   return;
+  }
+
+  const order = snapshot.val();
+
+  const updates = {
+   paymentStatus: "Paid"
+  };
+
+  await update(ref(db,"orders/"+id), updates);
+
+  if(order.userId){
+   await update(ref(db,"userOrders/"+order.userId+"/"+id), updates);
+  }
+
+  alert("Payment marked as Paid.");
+
+ } catch(error) {
+  alert("Error: " + error.message);
+ }
+
+});
 
 /* DELETE ORDER */
 document.getElementById("ordersList").addEventListener("click",async event=>{
