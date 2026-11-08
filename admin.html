@@ -554,7 +554,7 @@ function listenOrders(){
     <p>Status: ${escapeHTML(order.status || "Pending")}</p>
     <p>Date: ${escapeHTML(order.date || order.createdAt || "N/A")}</p>
     <h4>Order Details</h4>
-    <pre>${escapeHTML(JSON.stringify(order.items || order,null,2))}</pre>
+    ${renderOrderItems(order.items)}
 
     <label>Update Status</label>
     <select id="status-${escapeHTML(id)}">
