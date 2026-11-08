@@ -1080,62 +1080,84 @@ function renderAdminOrders(){
   renderOrders(orders);
 }
 
-function renderOrders(orders){ const box = document.getElementById("ordersList"); if(!box) return;
-box.innerHTML = "";
-if(!orders.length){ box.innerHTML = "No orders yet."; return; }
-[...orders].reverse().forEach(o => { const currentStatus = o.status === "Shipped" ? "Shipping" : (o.status || "Pending");
-const itemsHTML = (o.items || []).map(item => `
-�
-${item.image ? ` ￼ ` : ""} 
-${safe(item.name)} 
-Quantity: ${Number(item.quantity) || 0}
-Price: ${money(item.price)}
-`).join("");
-box.innerHTML += `
-�
-Order #${safe(o.id)} 
-Name: ${safe(o.name)}
-Phone: ${safe(o.phone)}
-Address: ${safe(o.address)}
-Payment: ${safe(o.payment)}
+function renderOrders(orders){
+ const box = document.getElementById("ordersList");
+ if(!box) return;
 
-<h3>Ordered Products</h3>
-${itemsHTML || "<p>No product details available.</p>"}
+ box.innerHTML = "";
 
-<p>Transaction ID:
- <strong>${safe(o.transactionId || "Not provided")}</strong>
-</p>
+ if(!orders.length){
+  box.innerHTML = "<p>No orders yet.</p>";
+  return;
+ }
 
-<p>Total: ${money(o.total)}</p>
-<p>Status: <span class="status">${safe(currentStatus)}</span></p>
-<p>Date: ${safe(o.date)}</p>
+ [...orders].reverse().forEach(o => {
+  const currentStatus =
+   o.status === "Shipped" ? "Shipping" : (o.status || "Pending");
 
-<p>Payment Status:
- <strong>${safe(o.paymentStatus || "Pending Payment")}</strong>
-</p>
+  const itemsHTML = (o.items || []).map(item => `
+   <div style="display:flex;gap:12px;align-items:center;margin:12px 0;padding:10px;border:1px solid #d4af37;border-radius:8px;">
+    ${item.image ? `
+     <img src="${safe(item.image)}"
+      alt="${safe(item.name)}"
+      style="width:85px;height:85px;object-fit:cover;border-radius:6px;"
+      onerror="this.style.display='none'">
+    ` : ""}
+    <div>
+     <strong>${safe(item.name)}</strong>
+     <p>Quantity: ${Number(item.quantity) || 0}</p>
+     <p>Price: ${money(item.price)}</p>
+    </div>
+   </div>
+  `).join("");
 
-<button class="gold" onclick="confirmPayment('${safe(o.id)}')">
- Confirm Payment
-</button>
+  box.innerHTML += `
+   <div class="admin-order">
+    <b>Order #${safe(o.id)}</b>
+    <p>Name: ${safe(o.name)}</p>
+    <p>Phone: ${safe(o.phone)}</p>
+    <p>Address: ${safe(o.address)}</p>
+    <p>Payment: ${safe(o.payment)}</p>
 
-<label>Update Status</label>
-<select id="status-${safe(o.id)}">
- <option value="Pending" ${currentStatus==="Pending"?"selected":""}>Pending</option>
- <option value="Confirmed" ${currentStatus==="Confirmed"?"selected":""}>Confirmed</option>
- <option value="Shipping" ${currentStatus==="Shipping"?"selected":""}>Shipping</option>
- <option value="Delivered" ${currentStatus==="Delivered"?"selected":""}>Delivered</option>
- <option value="Cancelled" ${currentStatus==="Cancelled"?"selected":""}>Cancelled</option>
-</select>
+    <h3>Ordered Products</h3>
+    ${itemsHTML || "<p>No product details available.</p>"}
 
-<button class="gold" onclick="updateOrderStatus('${safe(o.id)}')">
- Save Status
-</button>
+    <p>Transaction ID:
+     <strong>${safe(o.transactionId || "Not provided")}</strong>
+    </p>
 
-<button class="outline" onclick="deleteOrder('${safe(o.id)}')" style="color:#ff5555;border-color:#ff5555;margin-top:10px;">
- 🗑️ Delete Order
-</button>
-�
-`; }); }
+    <p>Total: ${money(o.total)}</p>
+    <p>Status: <span class="status">${safe(currentStatus)}</span></p>
+    <p>Date: ${safe(o.date)}</p>
+
+    <p>Payment Status:
+     <strong>${safe(o.paymentStatus || "Pending Payment")}</strong>
+    </p>
+
+    <button class="gold" onclick="confirmPayment('${safe(o.id)}')">
+     Confirm Payment
+    </button>
+
+    <label>Update Status</label>
+    <select id="status-${safe(o.id)}">
+     <option value="Pending" ${currentStatus==="Pending"?"selected":""}>Pending</option>
+     <option value="Confirmed" ${currentStatus==="Confirmed"?"selected":""}>Confirmed</option>
+     <option value="Shipping" ${currentStatus==="Shipping"?"selected":""}>Shipping</option>
+     <option value="Delivered" ${currentStatus==="Delivered"?"selected":""}>Delivered</option>
+     <option value="Cancelled" ${currentStatus==="Cancelled"?"selected":""}>Cancelled</option>
+    </select>
+
+    <button class="gold" onclick="updateOrderStatus('${safe(o.id)}')">
+     Save Status
+    </button>
+
+    <button class="outline" onclick="deleteOrder('${safe(o.id)}')">
+     🗑️ Delete Order
+    </button>
+   </div>
+  `;
+ });
+}
 
 window.updateOrderStatus=async function(id){
  if(!currentUser || !isAdmin){
