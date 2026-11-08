@@ -501,7 +501,29 @@ document.getElementById("productsList").addEventListener("click",async event=>{
  }
 
 });
+function renderOrderItems(items){
 
+ if(!items){
+  return "<p>No item details found.</p>";
+ }
+
+ const list = Array.isArray(items)
+  ? items
+  : Object.values(items);
+
+ return list.map(item => `
+  <div class="card">
+   ${item.image ? `
+    <img src="${item.image}" 
+         style="width:90px;height:90px;object-fit:cover"
+         alt="Product">
+   ` : ""}
+   <p><b>Product:</b> ${escapeHTML(item.name || "Product")}</p>
+   <p><b>Price:</b> ${escapeHTML(item.price || 0)} ETB</p>
+   <p><b>Quantity:</b> ${escapeHTML(item.quantity || 1)}</p>
+  </div>
+ `).join("");
+}
 
 /* LIST ORDERS */
 function listenOrders(){
